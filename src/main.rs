@@ -117,6 +117,19 @@ fn run() -> Result<()> {
         terminal.draw(|frame| {
             let todo_height = 5;
 
+            let content_max_width = 100;
+            let frame_width = frame.size().width;
+            let content_width = if frame_width < content_max_width { frame_width } else { content_max_width };
+            let horizontal_layout = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([
+                    Constraint::Length((frame_width - content_width) / 2),
+                    Constraint::Length(content_width),
+                    Constraint::Length((frame_width - content_width) / 2)
+                ]).split(frame.size());
+            frame.render_widget(Block::default(), horizontal_layout[0]);
+            frame.render_widget(Block::default(), horizontal_layout[2]);
+
             let todo_area_height = app.todos.len() * todo_height;
             let layout = Layout::default()
                 .direction(Direction::Vertical)
@@ -125,7 +138,7 @@ fn run() -> Result<()> {
                     Constraint::Length(5),
                     Constraint::Length(todo_area_height.try_into().unwrap()),
                     Constraint::Min(0)
-                ]).split(frame.size());
+                ]).split(horizontal_layout[1]);
 
             frame.render_widget(Paragraph::new("Todo App"), layout[0]);
 
@@ -152,7 +165,7 @@ fn run() -> Result<()> {
                     Block::default()
                         .borders(Borders::ALL)
                         .border_type(BorderType::Rounded)
-                        .style(Style::default().bg(if todo.completed { Color::Yellow } else { Color::default() })),
+                        .style(Style::default().bg(if todo.completed { Color::Yellow } else { Color::default() }).fg(if todo.completed { Color::Black } else { Color::Yellow })),
                     todo_layout[0]
                 );
 
