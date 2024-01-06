@@ -9,9 +9,15 @@ use crossterm::{
 use std::io::{stdout, Result};
 use ratatui::{prelude::*, widgets::*};
 
+pub mod app;
+pub mod todo;
+
+use app::{App, View};
+use todo::{Todo, Priority};
+
 fn main() -> Result<()> {
     startup()?;
-    let result = run();
+    let _result = run();
     shutdown()?;
     Ok(())
 }
@@ -20,88 +26,6 @@ fn startup() -> Result<()> {
     stdout().execute(EnterAlternateScreen)?;
     enable_raw_mode()?;
     Ok(())
-}
-
-enum View {
-    List,
-    Add,
-    Edit,
-}
-
-struct Category {
-    name: String
-}
-
-enum Priority {
-    P1,
-    P2,
-    P3,
-}
-
-struct Todo {
-    name: String,
-    category: Option<Category>,
-    priority: Priority,
-    completed: bool,
-    id: i32,
-}
-
-impl Todo {
-    fn new(name: String, category: Option<Category>, priority: Priority, id: i32) -> Todo {
-        Todo {
-            name,
-            category,
-            priority,
-            id,
-            completed: false,
-        } 
-    }
-
-    fn mark_complete(&mut self) {
-        self.completed = true;
-    }
-
-    fn mark_incomplete(&mut self) {
-        self.completed = false;
-    }
-}
-
-struct App {
-    view: View,
-    todos: Vec<Todo>,
-    should_quit: bool,
-    focused_todo: i32,
-}
-
-impl App {
-    fn new() -> App {
-        App {
-            view: View::List,
-            todos: Vec::new(),
-            should_quit: false,
-            focused_todo: 0,
-        }
-    }
-
-    fn set_view(&mut self, view: View) {
-        self.view = view;
-    }
-
-    fn add_todo(&mut self, name: String, category: Option<Category>, priority: Priority) {
-       self.todos.push(Todo::new(name, category, priority, self.todos.len().try_into().unwrap())); 
-    }
-
-    fn up(&mut self) {
-        if self.focused_todo != 0 {
-            self.focused_todo -= 1;
-        }
-    }
-
-    fn down(&mut self) {
-        if self.focused_todo != (self.todos.len() - 1).try_into().unwrap() {
-            self.focused_todo += 1;
-        }
-    }
 }
 
 fn run() -> Result<()> {
@@ -140,7 +64,7 @@ fn run() -> Result<()> {
                     Constraint::Min(0)
                 ]).split(horizontal_layout[1]);
 
-            frame.render_widget(Paragraph::new("Todo App"), layout[0]);
+            frame.render_widget(Paragraph::new("Todo App").alignment(Alignment::Center).style(Style::default().add_modifier(Modifier::BOLD)), layout[0]);
 
             let mut todo_constaints: Vec<Constraint> = Vec::new();
             for _todo in &app.todos {
@@ -201,6 +125,7 @@ fn run() -> Result<()> {
                                 active_todo.mark_complete();
                             }
                         },
+                        Char('i') => app.set_view(View::Add),
                         _ => {},
                     }
                 }
