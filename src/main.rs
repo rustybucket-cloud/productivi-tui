@@ -11,9 +11,13 @@ use ratatui::{prelude::*, widgets::*};
 
 pub mod app;
 pub mod todo;
+pub mod views;
+pub mod layout;
 
 use app::{App, View};
 use todo::{Todo, Priority};
+use views::list::list_view;
+use views::add::add_view;
 
 fn main() -> Result<()> {
     startup()?;
@@ -39,8 +43,6 @@ fn run() -> Result<()> {
 
     loop {
         terminal.draw(|frame| {
-            let todo_height = 5;
-
             let content_max_width = 100;
             let frame_width = frame.size().width;
             let content_width = if frame_width < content_max_width { frame_width } else { content_max_width };
@@ -54,59 +56,14 @@ fn run() -> Result<()> {
             frame.render_widget(Block::default(), horizontal_layout[0]);
             frame.render_widget(Block::default(), horizontal_layout[2]);
 
-            let todo_area_height = app.todos.len() * todo_height;
-            let layout = Layout::default()
-                .direction(Direction::Vertical)
-                .margin(1)
-                .constraints(vec![
-                    Constraint::Length(5),
-                    Constraint::Length(todo_area_height.try_into().unwrap()),
-                    Constraint::Min(0)
-                ]).split(horizontal_layout[1]);
-
-            frame.render_widget(Paragraph::new("Todo App").alignment(Alignment::Center).style(Style::default().add_modifier(Modifier::BOLD)), layout[0]);
-
-            let mut todo_constaints: Vec<Constraint> = Vec::new();
-            for _todo in &app.todos {
-               todo_constaints.push(Constraint::Max(todo_height.try_into().unwrap())); 
-            }
-            let todos_layout = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints(todo_constaints)
-                .split(layout[1]);
-            for (index, todo) in app.todos.iter().enumerate() {
-                let todo_layout = Layout::default()
-                    .direction(Direction::Horizontal)
-                    .horizontal_margin(3)
-                    .constraints([
-                        Constraint::Length(10),
-                        Constraint::Length(5),
-                        Constraint::Min(5)
-                    ])
-                    .split(todos_layout[index]);
-                
-                frame.render_widget(
-                    Block::default()
-                        .borders(Borders::ALL)
-                        .border_type(BorderType::Rounded)
-                        .style(Style::default().bg(if todo.completed { Color::Yellow } else { Color::default() }).fg(if todo.completed { Color::Black } else { Color::Yellow })),
-                    todo_layout[0]
-                );
-
-                frame.render_widget(Block::default(), todo_layout[1]);
-
-                let is_selected = index == app.focused_todo.try_into().unwrap();
-
-                let p = Paragraph::new(format!("{}", todo.name))
-                    .style(Style::default().fg(if is_selected { Color::Black } else { Color::Yellow }))
-                    .block(
-                        Block::default()
-                            .borders(Borders::ALL)
-                            .border_type(BorderType::Rounded)
-                            .padding(Padding::new(1,1,1,1))
-                            .style(Style::default().bg(if is_selected { Color::Yellow } else { Color::default() }))
-                    );
-                frame.render_widget(p, todo_layout[2]);
+            match app.view {
+                View::List => {
+                    let _list_view = list_view(frame, &mut app);
+                },
+                View::Add => {
+                    let _add_view = add_view(frame, &mut app);
+                },
+                View::Edit => {},
             }
         })?;
 
@@ -117,7 +74,7 @@ fn run() -> Result<()> {
                         Char('q') => app.should_quit = true,
                         Char('j') => app.down(),
                         Char('k') => app.up(),
-                        Char('a') => {
+                        Char('c') => {
                            let active_todo: &mut Todo = &mut app.todos[<i32 as TryInto<usize>>::try_into(app.focused_todo).unwrap()];
                             if active_todo.completed {
                                 active_todo.mark_incomplete();
@@ -125,7 +82,7 @@ fn run() -> Result<()> {
                                 active_todo.mark_complete();
                             }
                         },
-                        Char('i') => app.set_view(View::Add),
+                        Char('a') => app.set_view(View::Add),
                         _ => {},
                     }
                 }
