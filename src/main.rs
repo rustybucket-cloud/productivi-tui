@@ -17,7 +17,7 @@ pub mod layout;
 use app::{App, View};
 use todo::{Todo, Priority};
 use views::list::list_view;
-use views::add::add_view;
+use views::add::{add_view};
 
 fn main() -> Result<()> {
     startup()?;
@@ -70,20 +70,48 @@ fn run() -> Result<()> {
         if event::poll(std::time::Duration::from_millis(250))? {
             if let Key(key) = event::read()? {
                 if key.kind == event::KeyEventKind::Press {
-                    match key.code {
-                        Char('q') => app.should_quit = true,
-                        Char('j') => app.down(),
-                        Char('k') => app.up(),
-                        Char('c') => {
-                           let active_todo: &mut Todo = &mut app.todos[<i32 as TryInto<usize>>::try_into(app.focused_todo).unwrap()];
-                            if active_todo.completed {
-                                active_todo.mark_incomplete();
-                            } else {
-                                active_todo.mark_complete();
+                    if app.insert_mode {
+                        match key.code {
+                            Char('i') => app.toggle_insert_mode(),
+                            _ => {
+                                match app.view {
+                                    View::Add => app.add_view_state.update_input(key),
+                                    _ => {},
+                                }
                             }
-                        },
-                        Char('a') => app.set_view(View::Add),
-                        _ => {},
+                        }
+                    } else {
+                        match key.code {
+                            Char('q') => app.should_quit = true,
+                            Char('j') => {
+                                match app.view {
+                                    View::Add => app.add_view_state.focus_down(),
+                                    _ => app.down(),
+                                }
+                            },
+                            Char('k') => {
+                                match app.view {
+                                    View::Add => app.add_view_state.focus_up(),
+                                    _ => app.up(),
+                                }
+                            },
+                            Char('c') => {
+                                let active_todo: &mut Todo = &mut app.todos[<i32 as TryInto<usize>>::try_into(app.focused_todo).unwrap()];
+                                if active_todo.completed {
+                                    active_todo.mark_incomplete();
+                                } else {
+                                    active_todo.mark_complete();
+                                }
+                            },
+                            Char('a') => app.set_view(View::Add),
+                            Char('i') => {
+                                match app.view {
+                                    View::Add => app.toggle_insert_mode(),
+                                    _ => {},
+                                }
+                            },
+                            _ => {},
+                        }
                     }
                 }
             }

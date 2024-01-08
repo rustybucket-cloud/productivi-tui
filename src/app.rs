@@ -1,4 +1,5 @@
 use crate::todo::{Todo, Priority, Category};
+use crate::views::add::{AddViewState};
 
 pub enum View {
     List,
@@ -10,7 +11,9 @@ pub struct App {
     pub view: View,
     pub todos: Vec<Todo>,
     pub should_quit: bool,
+    pub insert_mode: bool,
     pub focused_todo: i32,
+    pub add_view_state: AddViewState,
 }
 
 impl App {
@@ -19,7 +22,9 @@ impl App {
             view: View::List,
             todos: Vec::new(),
             should_quit: false,
+            insert_mode: false,
             focused_todo: 0,
+            add_view_state: AddViewState::new(),
         }
     }
 
@@ -41,5 +46,9 @@ impl App {
         if self.focused_todo != (self.todos.len() - 1).try_into().unwrap() {
             self.focused_todo += 1;
         }
+    }
+
+    pub fn toggle_insert_mode(&mut self) {
+        self.insert_mode = !self.insert_mode;
     }
 }
